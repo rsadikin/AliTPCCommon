@@ -53,9 +53,11 @@ public:
   void GetCorrectionCyl(const Float_t x[], Short_t roc, Float_t dx[]);
   void GetCorrectionCylAC(const Float_t x[], Short_t roc, Float_t dx[]);
   void GetCorrectionCylACIrregular(const Float_t x[], Short_t roc, Float_t dx[]);
+  void GetCorrectionCylACIrregular(const Float_t x[], Short_t roc, Float_t dx[],const Int_t side);
   void GetDistortion(const Float_t x[], Short_t roc, Float_t dx[]);
 
   void GetCorrection(const Float_t x[], Short_t roc, Float_t dx[]);
+  void GetCorrection(const Float_t x[], Short_t roc, Float_t dx[],const Int_t side);
 
   Double_t GetChargeCylAC(const Float_t x[], Short_t roc);
   Double_t GetPotentialCylAC(const Float_t x[], Short_t roc);
