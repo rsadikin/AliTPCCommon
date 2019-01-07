@@ -2441,6 +2441,66 @@ void AliTPCSpaceCharge3DCalc::GetCorrectionCylACIrregular(const Float_t x[], Sho
           dZ;  // z distortion - (scaled with drift velocity dependency on the Ez field and the overall scaling factor)
 
 }
+
+
+
+/// Get Correction from irregular table
+///
+/// \param x
+/// \param roc
+/// \param dx
+void AliTPCSpaceCharge3DCalc::GetCorrectionCylACIrregular(const Float_t x[], Short_t roc, Float_t dx[], const Int_t side) {
+  if (!fInitLookUp) {
+    Info("AliTPCSpaceCharge3DCalc::GetCorrectionCylACIrregular","Lookup table was not initialized! Performing the initialization now ...");
+    InitSpaceCharge3DPoissonIntegralDz(129, 129, 144, 100, 1e-8);
+  }
+
+  Double_t dR, dRPhi, dZ;
+  Double_t r, phi, z;
+  Int_t sign;
+  const Float_t gridSizeR = (AliTPCPoissonSolver::fgkOFCRadius - AliTPCPoissonSolver::fgkIFCRadius) / (fNRRows - 1);
+  const Float_t gridSizeZ = AliTPCPoissonSolver::fgkTPCZ0 / (fNZColumns - 1);
+  const Float_t gridSizePhi = TMath::TwoPi() / fNPhiSlices;
+
+  r = x[0];
+  phi = x[1];
+  z = x[2];                                         // Create temporary copy of x[2]
+
+  if ((roc % 36) < 18) {
+    sign = 1;       // (TPC A side)
+  } else {
+    sign = -1;       // (TPC C side)
+  }
+
+  if (sign == 1 && z < AliTPCPoissonSolver::fgkZOffSet) z = AliTPCPoissonSolver::fgkZOffSet;    // Protect against discontinuity at CE
+  if (sign == -1 && z > -AliTPCPoissonSolver::fgkZOffSet) z = -AliTPCPoissonSolver::fgkZOffSet;    // Protect against discontinuity at CE
+
+
+  if ((sign == 1 && z < 0) || (sign == -1 && z > 0)) // just a consistency check
+    Error("AliTPCSpaceChargeCalc3D::GetCorrectionCylACIrregular","ROC number does not correspond to z coordinate! Calculation of distortions is most likely wrong!");
+
+
+  // get distortion from irregular table
+
+
+
+  if (side == 0)
+    fLookupIntCorrIrregularA->GetValue(r, phi, z, dR, dRPhi, dZ);
+  else {
+    fLookupIntCorrIrregularC->GetValue(r, phi, -z, dR, dRPhi, dZ);
+    dZ = -1 * dZ;
+  }
+
+  dx[0] = fCorrectionFactor * dR;
+  dx[1] = fCorrectionFactor * dRPhi;
+  dx[2] = fCorrectionFactor *
+          dZ;  // z distortion - (scaled with drift velocity dependency on the Ez field and the overall scaling factor)
+
+}
+
+
+
+
 /// Get correction regular grid by following electron
 /// 
 /// \param x 
@@ -2577,6 +2637,50 @@ void AliTPCSpaceCharge3DCalc::GetCorrection(const Float_t x[], Short_t roc, Floa
   dx[2] = dCyl[2];
 
 }
+
+
+///
+/// \param x
+/// \param roc
+/// \param dx
+void AliTPCSpaceCharge3DCalc::GetCorrection(const Float_t x[], Short_t roc, Float_t dx[],const Int_t side) {
+  if (!fInitLookUp) {
+    Info("AliTPCSpaceCharge3DCalc::GetCorrection","Lookup table was not initialized! Performing the initialization now ...");
+    InitSpaceCharge3DPoissonIntegralDz(129, 129, 144, 100, 1e-8);
+  }
+
+  Float_t pCyl[3]; // a point in cylindrical coordinate
+  Float_t dCyl[3]; // distortion
+
+  pCyl[0] = TMath::Sqrt(x[0] * x[0] + x[1] * x[1]);
+  pCyl[1] = TMath::ATan2(x[1], x[0]);
+  pCyl[2] = x[2];                                         // Create temporary copy of x[2]
+
+
+  if (fCorrectionType == kRegularInterpolator) {
+    while (pCyl[1] > TMath::Pi()) pCyl[1] -= TMath::TwoPi();
+    while (pCyl[1] < -TMath::Pi()) pCyl[1] += TMath::TwoPi();
+
+    GetCorrectionCylAC(pCyl, roc, dCyl);
+  } else {
+    GetCorrectionCylACIrregular(pCyl, roc, dCyl,side);
+  }
+
+  // Calculate distorted position
+  if (pCyl[0] > 0.0) {
+    pCyl[0] = pCyl[0] + fCorrectionFactor * dCyl[0];
+    pCyl[1] = pCyl[1] + fCorrectionFactor * dCyl[1] / pCyl[0];
+  }
+
+  dCyl[2] = fCorrectionFactor * dCyl[2];
+
+  // distortion in x,y and z
+  dx[0] = (pCyl[0] * TMath::Cos(pCyl[1]) - x[0]);
+  dx[1] = (pCyl[0] * TMath::Sin(pCyl[1]) - x[1]);
+  dx[2] = dCyl[2];
+
+}
+
 
 
 /// Use 3D space charge map as an optional input
