@@ -41,7 +41,7 @@ ClassImp(AliTPCSpaceCharge3DCalc)
 AliTPCSpaceCharge3DCalc::AliTPCSpaceCharge3DCalc()
   : fC0(0.), fC1(0.), fCorrectionFactor(1.), fInitLookUp(kFALSE), fInterpolationOrder(5),
     fIrregularGridSize(3), fRBFKernelType(0), fNRRows(129), fNZColumns(129), fNPhiSlices(180),
-    fCorrectionType(0), fIntegrationStrategy(0) {
+    fCorrectionType(1), fIntegrationStrategy(0) {
   InitAllocateMemory();
 }
 
@@ -55,7 +55,7 @@ AliTPCSpaceCharge3DCalc::AliTPCSpaceCharge3DCalc( Int_t nRRow,
                                                            Int_t nZColumn, Int_t nPhiSlice) :
   fC0(0.), fC1(0.), fCorrectionFactor(1.), fInitLookUp(kFALSE),
   fInterpolationOrder(3),
-  fIrregularGridSize(3), fRBFKernelType(0), fCorrectionType(0), fIntegrationStrategy(0) {
+  fIrregularGridSize(3), fRBFKernelType(0), fCorrectionType(1), fIntegrationStrategy(0) {
   fNRRows = nRRow;
   fNPhiSlices = nPhiSlice; // the maximum of phi-slices so far = (8 per sector)
   fNZColumns = nZColumn; // the maximum on column-slices so  ~ 2cm slicing
@@ -76,7 +76,7 @@ AliTPCSpaceCharge3DCalc::AliTPCSpaceCharge3DCalc(
   Int_t nRRow, Int_t nZColumn, Int_t nPhiSlice, Int_t interpolationOrder,
   Int_t irregularGridSize, Int_t rbfKernelType)
   : fC0(0.), fC1(0.), fCorrectionFactor(1.), fInitLookUp(kFALSE),
-    fCorrectionType(0),fIntegrationStrategy(0) {
+    fCorrectionType(1),fIntegrationStrategy(0) {
   fInterpolationOrder = interpolationOrder;
   fIrregularGridSize = irregularGridSize;
 
@@ -1680,7 +1680,6 @@ AliTPCSpaceCharge3DCalc::LocalDistCorrDz(TMatrixD **matricesEr, TMatrixD **matri
 
         (*distDrDz)(i, j) = fC0 * localIntErOverEz + fC1 * localIntEPhiOverEz;
         (*distDPhiRDz)(i, j) = fC0 * localIntEPhiOverEz - fC1 * localIntErOverEz;
-        (*distDz)(i, j) = localIntDeltaEz * -1 *  AliTPCPoissonSolver::fgkdvdE;// two times?
 
 
         (*corrDrDz)(i, j + 1) = -1 * (*distDrDz)(i, j);
@@ -1861,7 +1860,7 @@ void AliTPCSpaceCharge3DCalc::IntegrateDistCorrDriftLineDz(
         // set
         if (fCorrectionType == kIrregularInterpolator) {
 		(*mCorrIrregularDrDz)(i, j) = - drDist;
-        	(*mCorrIrregularDPhiRDz)(i, j) =  -1 * dPhi * radius0;
+        	(*mCorrIrregularDPhiRDz)(i, j) =  -1 * dPhi * (radius0 +drDist);
         	(*mCorrIrregularDz)(i, j) = -dzDist;
 
 
@@ -2062,8 +2061,7 @@ void AliTPCSpaceCharge3DCalc::IntegrateDistCorrDriftLineDz(
 
           ddR = fC0 * localIntErOverEz + fC1 * localIntEPhiOverEz;
           ddRPhi = fC0 * localIntEPhiOverEz - fC1 * localIntErOverEz;
-          ddZ = -1 * localIntDeltaEz * AliTPCPoissonSolver::fgkdvdE; // two times?
-
+          ddZ = -1 * localIntDeltaEz * AliTPCPoissonSolver::fgkdvdE; 
 
           drDist += ddR;
 	  dPhi += (ddRPhi/radius);
@@ -2079,7 +2077,7 @@ void AliTPCSpaceCharge3DCalc::IntegrateDistCorrDriftLineDz(
 /////////////// use irregular grid look up table for correction
         // set
         (*mCorrIrregularDrDz)(i, j) = -drDist;
-        (*mCorrIrregularDPhiRDz)(i, j) = -dPhi *radius0;
+        (*mCorrIrregularDPhiRDz)(i, j) = -dPhi *(radius0 + drDist);
         (*mCorrIrregularDz)(i, j) = -dzDist;
 
 
@@ -2097,7 +2095,7 @@ void AliTPCSpaceCharge3DCalc::IntegrateDistCorrDriftLineDz(
         dzDist = (*mCorrDz)(i, j + 1);
 
         radiusCorrection = radius0 + drDist;
-        dPhi = (*mCorrDPhiRDz)(i, j + 1) /radiusCorrection;
+        dPhi = (*mCorrDPhiRDz)(i, j + 1) /radius0;
         phi = phi0 + dPhi;
         z = zList[j + 1] + dzDist;
         z1 = z - (zList[j+1] - zList[j]);
