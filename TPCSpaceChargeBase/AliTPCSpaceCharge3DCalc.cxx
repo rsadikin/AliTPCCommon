@@ -1680,7 +1680,7 @@ AliTPCSpaceCharge3DCalc::LocalDistCorrDz(TMatrixD **matricesEr, TMatrixD **matri
 
         (*distDrDz)(i, j) = fC0 * localIntErOverEz + fC1 * localIntEPhiOverEz;
         (*distDPhiRDz)(i, j) = fC0 * localIntEPhiOverEz - fC1 * localIntErOverEz;
-
+	(*distDz)(i, j) = localIntDeltaEz * -1 *  AliTPCPoissonSolver::fgkdvdE;
 
         (*corrDrDz)(i, j + 1) = -1 * (*distDrDz)(i, j);
         (*corrDPhiRDz)(i, j + 1) = -1 * (*distDPhiRDz)(i, j);
