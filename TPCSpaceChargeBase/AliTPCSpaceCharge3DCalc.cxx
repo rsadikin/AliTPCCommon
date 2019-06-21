@@ -785,6 +785,7 @@ void AliTPCSpaceCharge3DCalc::InitSpaceCharge3DPoissonIntegralDz(
           fLookupIntCorrIrregularC->CopyFromMatricesToInterpolator();
 	w.Stop();
       	myProfile.interpolationInitTime = w.CpuTime();
+        Info("AliTPCSpaceCharge3DCalc::InitSpaceCharge3DPoissonIntegralDz","%s",Form("Step 5: Filling up the look up: %f\n", w.CpuTime()));
         Info("AliTPCSpaceCharge3DCalc::InitSpaceCharge3DPoissonIntegralDz"," C side done");
       }
 
@@ -1860,7 +1861,7 @@ void AliTPCSpaceCharge3DCalc::IntegrateDistCorrDriftLineDz(
         // set
         if (fCorrectionType == kIrregularInterpolator) {
 		(*mCorrIrregularDrDz)(i, j) = - drDist;
-        	(*mCorrIrregularDPhiRDz)(i, j) =  -1 * dPhi * (radius0 +drDist);
+        	(*mCorrIrregularDPhiRDz)(i, j) =  -1 * dPhi * radius0;
         	(*mCorrIrregularDz)(i, j) = -dzDist;
 
 
@@ -2077,7 +2078,7 @@ void AliTPCSpaceCharge3DCalc::IntegrateDistCorrDriftLineDz(
 /////////////// use irregular grid look up table for correction
         // set
         (*mCorrIrregularDrDz)(i, j) = -drDist;
-        (*mCorrIrregularDPhiRDz)(i, j) = -dPhi *(radius0 + drDist);
+        (*mCorrIrregularDPhiRDz)(i, j) = -dPhi *radius0;
         (*mCorrIrregularDz)(i, j) = -dzDist;
 
 
